@@ -6,6 +6,9 @@
         <%= render "plan/task_group", group: group, tasks: @tasks_by_group[group] %>
       <% end %>
     </div>
+
+    <!-- Completed Tasks Section -->
+    <%= render "plan/completed_section", completed_tasks: @completed_tasks %>
   </div>
 
   <!-- Right Pane: Calendar Day View -->

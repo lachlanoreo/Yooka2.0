@@ -1,0 +1,32 @@
+<div id="<%= dom_id(task) %>"
+     class="flex items-center gap-2 rounded-md px-2 py-1.5"
+     data-controller="task-row"
+     data-task-row-id-value="<%= task.id %>">
+  <!-- Checkbox (checked) -->
+  <button type="button"
+          class="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-green-500 bg-green-500"
+          data-action="click->task-row#toggleComplete">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+    </svg>
+  </button>
+
+  <!-- Title -->
+  <span class="flex-1 text-sm text-zinc-400 line-through">
+    <%= task.title %>
+  </span>
+
+  <!-- Source indicator -->
+  <% if task.basecamp? %>
+    <span class="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">BC</span>
+  <% else %>
+    <span class="rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-600">P</span>
+  <% end %>
+
+  <!-- Due date -->
+  <% if task.due_date %>
+    <span class="text-xs text-zinc-400">
+      <%= task.due_date.strftime("%-m/%-d") %>
+    </span>
+  <% end %>
+</div>

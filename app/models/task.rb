@@ -38,11 +38,15 @@ class Task < ApplicationRecord
   end
 
   def complete!
-    update!(completed_at: Time.current)
+    update!(completed_at: Time.current, completed_from_group: group)
   end
 
   def uncomplete!
-    update!(completed_at: nil)
+    original_group = completed_from_group || "inbox"
+    transaction do
+      update!(completed_at: nil, completed_from_group: nil)
+      move_to_group(original_group) unless group == original_group
+    end
   end
 
   def archive!

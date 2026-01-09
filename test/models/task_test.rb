@@ -41,17 +41,34 @@ class TaskTest < ActiveSupport::TestCase
     assert task.completed?
   end
 
-  test "complete! sets completed_at" do
+  test "complete! sets completed_at and completed_from_group" do
     task = tasks(:inbox_task)
     assert_nil task.completed_at
+    assert_nil task.completed_from_group
     task.complete!
     assert_not_nil task.completed_at
+    assert_equal "inbox", task.completed_from_group
   end
 
-  test "uncomplete! clears completed_at" do
-    task = tasks(:completed_task)
+  test "uncomplete! clears completed_at and restores original group" do
+    task = tasks(:today_task)
+    task.complete!
+    assert_equal "today", task.completed_from_group
+
     task.uncomplete!
     assert_nil task.completed_at
+    assert_nil task.completed_from_group
+    assert_equal "today", task.group
+  end
+
+  test "uncomplete! defaults to inbox if completed_from_group is nil" do
+    task = tasks(:completed_task)
+    task.update_column(:completed_from_group, nil)
+    task.update_column(:group, "today")
+
+    task.uncomplete!
+    assert_nil task.completed_at
+    assert_equal "inbox", task.group
   end
 
   test "archived? returns true when archived_at is set" do

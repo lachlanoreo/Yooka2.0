@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_09_090446) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_09_131126) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -52,6 +52,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_09_090446) do
     t.string "basecamp_url"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "completed_from_group"
     t.index ["archived_at"], name: "index_tasks_on_archived_at"
     t.index ["basecamp_todo_id"], name: "index_tasks_on_basecamp_todo_id", unique: true, where: "(basecamp_todo_id IS NOT NULL)"
     t.index ["completed_at"], name: "index_tasks_on_completed_at"

@@ -10,14 +10,31 @@
     "someday" => "Some day"
   }
   is_inbox = group == "inbox"
+  is_today = group == "today"
+
+  wrapper_class = if is_inbox
+    'rounded-lg border-2 border-amber-200 bg-amber-50 p-3'
+  elsif is_today
+    'rounded-lg border-2 border-indigo-200 bg-indigo-50 p-3'
+  else
+    ''
+  end
+
+  header_class = if is_inbox
+    'text-amber-800'
+  elsif is_today
+    'text-indigo-800'
+  else
+    'text-zinc-700'
+  end
 %>
 
 <div id="<%= dom_id_for_group(group) %>"
-     class="<%= is_inbox ? 'rounded-lg border-2 border-amber-200 bg-amber-50 p-3' : '' %>"
+     class="<%= wrapper_class %>"
      data-controller="task-group"
      data-task-group-name-value="<%= group %>">
   <div class="mb-2 flex items-center justify-between">
-    <h2 class="text-sm font-semibold <%= is_inbox ? 'text-amber-800' : 'text-zinc-700' %>">
+    <h2 class="text-sm font-semibold <%= header_class %>">
       <%= group_labels[group] %>
       <span class="ml-1 text-xs font-normal text-zinc-400">(<%= tasks.count %>)</span>
     </h2>
@@ -41,6 +58,9 @@
               placeholder: "New task...",
               class: "flex-1 rounded-md border border-zinc-300 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500",
               data: { task_group_target: "newTaskInput" } %>
+          <%= f.date_field :due_date,
+              class: "w-32 rounded-md border border-zinc-300 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500",
+              placeholder: "Due date" %>
           <%= f.submit "Add", class: "rounded-md bg-amber-500 px-3 py-1 text-sm font-medium text-white hover:bg-amber-600" %>
         </div>
       <% end %>
@@ -48,12 +68,15 @@
   <% end %>
 
   <!-- Task List -->
-  <div class="space-y-1" data-task-group-target="taskList">
+  <div class="min-h-[2rem] space-y-1"
+       data-task-group-target="taskList"
+       data-controller="sortable"
+       data-sortable-group-value="<%= group %>">
     <% tasks.each do |task| %>
       <%= render "plan/task_row", task: task %>
     <% end %>
     <% if tasks.empty? %>
-      <p class="py-2 text-center text-xs text-zinc-400">No tasks</p>
+      <p class="py-2 text-center text-xs text-zinc-400 empty-message">No tasks</p>
     <% end %>
   </div>
 </div>

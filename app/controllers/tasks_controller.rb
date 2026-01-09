@@ -37,6 +37,7 @@ class TasksController < ApplicationController
   end
 
   def complete
+    @old_group = @task.group
     @task.complete!
 
     # If it's a Basecamp task, also complete it in Basecamp
@@ -49,15 +50,16 @@ class TasksController < ApplicationController
     end
 
     respond_to do |format|
-      format.turbo_stream { render_task_update }
+      format.turbo_stream { render_task_complete }
       format.html { redirect_to plan_path }
     end
   end
 
   def uncomplete
+    @old_group = @task.group
     @task.uncomplete!
     respond_to do |format|
-      format.turbo_stream { render_task_update }
+      format.turbo_stream { render_task_uncomplete }
       format.html { redirect_to plan_path }
     end
   end
@@ -80,6 +82,7 @@ class TasksController < ApplicationController
       respond_to do |format|
         format.turbo_stream { render_task_move }
         format.html { redirect_to plan_path }
+        format.json { head :ok }
       end
     else
       head :unprocessable_entity
@@ -113,7 +116,7 @@ class TasksController < ApplicationController
       turbo_stream.remove(@task),
       turbo_stream.replace("task-group-#{@old_group}",
         partial: "plan/task_group",
-        locals: { group: @old_group, tasks: Task.active.in_group(@old_group).ordered })
+        locals: { group: @old_group, tasks: Task.active.incomplete.in_group(@old_group).ordered })
     ]
   end
 
@@ -122,10 +125,36 @@ class TasksController < ApplicationController
       turbo_stream.remove(@task),
       turbo_stream.replace("task-group-#{@old_group}",
         partial: "plan/task_group",
-        locals: { group: @old_group, tasks: Task.active.in_group(@old_group).ordered }),
+        locals: { group: @old_group, tasks: Task.active.incomplete.in_group(@old_group).ordered }),
       turbo_stream.replace("task-group-#{@task.group}",
         partial: "plan/task_group",
-        locals: { group: @task.group, tasks: Task.active.in_group(@task.group).ordered })
+        locals: { group: @task.group, tasks: Task.active.incomplete.in_group(@task.group).ordered })
+    ]
+  end
+
+  def render_task_complete
+    completed_tasks = Task.active.completed.order(completed_at: :desc)
+    render turbo_stream: [
+      turbo_stream.remove(@task),
+      turbo_stream.replace("task-group-#{@old_group}",
+        partial: "plan/task_group",
+        locals: { group: @old_group, tasks: Task.active.incomplete.in_group(@old_group).ordered }),
+      turbo_stream.replace("completed-section",
+        partial: "plan/completed_section",
+        locals: { completed_tasks: completed_tasks })
+    ]
+  end
+
+  def render_task_uncomplete
+    completed_tasks = Task.active.completed.order(completed_at: :desc)
+    render turbo_stream: [
+      turbo_stream.remove(@task),
+      turbo_stream.replace("task-group-#{@task.group}",
+        partial: "plan/task_group",
+        locals: { group: @task.group, tasks: Task.active.incomplete.in_group(@task.group).ordered }),
+      turbo_stream.replace("completed-section",
+        partial: "plan/completed_section",
+        locals: { completed_tasks: completed_tasks })
     ]
   end
 end
