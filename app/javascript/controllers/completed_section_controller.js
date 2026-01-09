@@ -12,10 +12,10 @@ export default class extends Controller {
 
     if (this.expanded) {
       this.contentTarget.classList.remove("hidden")
-      this.iconTarget.classList.add("rotate-180")
+      this.iconTarget.classList.add("completed-section__icon--open")
     } else {
       this.contentTarget.classList.add("hidden")
-      this.iconTarget.classList.remove("rotate-180")
+      this.iconTarget.classList.remove("completed-section__icon--open")
     }
   }
 }

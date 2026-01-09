@@ -1,10 +1,10 @@
-<div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3" data-controller="daily-goal" data-daily-goal-date-value="<%= daily_goal.date %>">
-  <label class="mb-1 block text-xs font-medium text-zinc-500">Top goal for today</label>
+<div class="daily-goal" data-controller="daily-goal" data-daily-goal-date-value="<%= daily_goal.date %>">
+  <label class="daily-goal__label">Top goal for today</label>
   <input type="text"
          value="<%= daily_goal.content %>"
-         placeholder="What's your most important task today?"
-         class="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+         placeholder="What's your most important focus today?"
+         class="daily-goal__input"
          data-daily-goal-target="input"
          data-action="input->daily-goal#save">
-  <p class="mt-1 text-xs text-zinc-400" data-daily-goal-target="status"></p>
+  <p class="daily-goal__status" data-daily-goal-target="status"></p>
 </div>

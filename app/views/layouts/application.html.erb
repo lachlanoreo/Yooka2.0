@@ -18,22 +18,24 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="h-full bg-zinc-50 text-zinc-900 antialiased">
+  <body class="yooka-container h-full">
     <div class="flex h-full flex-col">
-      <nav class="border-b border-zinc-200 bg-white">
-        <div class="mx-auto flex h-14 items-center justify-between px-4">
-          <div class="flex items-center gap-6">
-            <a href="<%= root_path %>" class="text-lg font-semibold text-zinc-900">Yooka</a>
+      <!-- Navigation -->
+      <nav class="yooka-nav">
+        <div class="mx-auto flex h-16 items-center justify-between px-6">
+          <div class="flex items-center gap-8">
+            <a href="<%= root_path %>" class="yooka-nav-brand">Yooka</a>
             <div class="flex items-center gap-1">
-              <%= link_to "Plan", plan_path, class: "rounded-md px-3 py-2 text-sm font-medium #{request.path == plan_path ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'}" %>
+              <%= link_to "Plan", plan_path, class: "yooka-nav-link #{request.path == plan_path ? 'active' : ''}" %>
             </div>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-zinc-500"><%= Date.current.strftime("%A, %B %-d") %></span>
+          <div class="flex items-center gap-3">
+            <span class="yooka-date"><%= Date.current.strftime("%A, %B %-d") %></span>
           </div>
         </div>
       </nav>
 
+      <!-- Main Content -->
       <main class="flex-1 overflow-hidden">
         <%= yield %>
       </main>

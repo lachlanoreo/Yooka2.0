@@ -1,49 +1,55 @@
-<div class="flex h-full">
+<div class="flex h-full gap-6 p-6">
   <!-- Left Pane: Task Groups -->
-  <div class="w-1/2 overflow-y-auto border-r border-zinc-200 bg-white p-4">
-    <div class="space-y-6">
-      <% Task::GROUPS.each do |group| %>
-        <%= render "plan/task_group", group: group, tasks: @tasks_by_group[group] %>
+  <div class="yooka-panel w-1/2 overflow-y-auto p-5">
+    <div class="space-y-5">
+      <% Task::GROUPS.each_with_index do |group, index| %>
+        <div class="animate-fade-in opacity-0 animate-delay-<%= index + 1 %>">
+          <%= render "plan/task_group", group: group, tasks: @tasks_by_group[group] %>
+        </div>
       <% end %>
     </div>
 
     <!-- Completed Tasks Section -->
-    <%= render "plan/completed_section", completed_tasks: @completed_tasks %>
+    <div class="animate-fade-in opacity-0 animate-delay-8">
+      <%= render "plan/completed_section", completed_tasks: @completed_tasks %>
+    </div>
   </div>
 
   <!-- Right Pane: Calendar Day View -->
-  <div class="w-1/2 overflow-y-auto bg-white p-4">
+  <div class="yooka-panel w-1/2 overflow-y-auto p-5">
     <!-- Top Goal -->
-    <div class="mb-4">
+    <div class="mb-5 animate-fade-in opacity-0 animate-delay-1">
       <%= render "plan/daily_goal", daily_goal: @daily_goal %>
     </div>
 
     <!-- Day View Calendar -->
-    <div class="rounded-lg border border-zinc-200">
-      <%= render "plan/day_view", time_blocks: @time_blocks, google_events: @google_events %>
+    <div class="animate-fade-in opacity-0 animate-delay-2">
+      <div class="day-view">
+        <%= render "plan/day_view", time_blocks: @time_blocks, google_events: @google_events %>
+      </div>
     </div>
 
     <!-- Integration Status -->
-    <div class="mt-4 space-y-2">
+    <div class="mt-5 space-y-3 animate-fade-in opacity-0 animate-delay-3">
       <% if @google_connected %>
-        <div class="rounded-md border border-green-200 bg-green-50 p-3">
-          <p class="text-sm text-green-700">Google Calendar connected</p>
+        <div class="connection-card connection-card--connected">
+          <p class="connection-card__status connection-card__status--connected">Google Calendar connected</p>
         </div>
       <% else %>
-        <div class="rounded-md border border-zinc-200 bg-zinc-50 p-3">
-          <p class="text-sm text-zinc-600">Google Calendar not connected</p>
-          <%= link_to "Connect Google Calendar", "/auth/google_oauth2", method: :post, class: "text-sm text-blue-600 hover:text-blue-800", data: { turbo: false } %>
+        <div class="connection-card connection-card--disconnected">
+          <p class="connection-card__status connection-card__status--disconnected">Google Calendar not connected</p>
+          <%= link_to "Connect", "/auth/google_oauth2", method: :post, class: "connection-card__action connection-card__action--connect", data: { turbo: false } %>
         </div>
       <% end %>
 
       <% if @basecamp_connected %>
-        <div class="rounded-md border border-green-200 bg-green-50 p-3 flex items-center justify-between">
-          <p class="text-sm text-green-700">Basecamp connected</p>
-          <%= button_to "Sync Now", basecamp_sync_path, method: :post, class: "rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700", data: { turbo: false } %>
+        <div class="connection-card connection-card--connected">
+          <p class="connection-card__status connection-card__status--connected">Basecamp connected</p>
+          <%= button_to "Sync Now", basecamp_sync_path, method: :post, class: "connection-card__action connection-card__action--sync", data: { turbo: false } %>
         </div>
       <% else %>
-        <div class="rounded-md border border-zinc-200 bg-zinc-50 p-3">
-          <p class="text-sm text-zinc-600">Basecamp not connected</p>
+        <div class="connection-card connection-card--disconnected">
+          <p class="connection-card__status connection-card__status--disconnected">Basecamp not connected</p>
           <%
             basecamp_auth_url = "https://launchpad.37signals.com/authorization/new?" + {
               type: 'web_server',
@@ -51,7 +57,7 @@
               redirect_uri: "#{request.base_url}/auth/basecamp/callback"
             }.to_query
           %>
-          <%= link_to "Connect Basecamp", basecamp_auth_url, class: "text-sm text-blue-600 hover:text-blue-800" %>
+          <%= link_to "Connect", basecamp_auth_url, class: "connection-card__action connection-card__action--connect" %>
         </div>
       <% end %>
     </div>

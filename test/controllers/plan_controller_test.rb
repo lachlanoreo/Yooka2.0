@@ -19,16 +19,16 @@ class PlanControllerTest < ActionDispatch::IntegrationTest
     get plan_path
     assert_response :success
 
-    # Inbox should have special styling (amber background)
-    assert_select "#task-group-inbox.bg-amber-50"
+    # Inbox should have special styling
+    assert_select "#task-group-inbox.task-group--inbox"
   end
 
   test "plan page shows today group as visually distinct" do
     get plan_path
     assert_response :success
 
-    # Today should have special styling (indigo background)
-    assert_select "#task-group-today.bg-indigo-50"
+    # Today should have special styling
+    assert_select "#task-group-today.task-group--today"
   end
 
   test "plan page shows completed tasks section" do

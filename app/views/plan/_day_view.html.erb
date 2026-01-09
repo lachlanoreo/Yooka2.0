@@ -8,22 +8,22 @@
   google_events = local_assigns[:google_events] || []
 %>
 
-<div class="relative" style="height: <%= total_height %>px;" data-controller="day-view">
+<div class="day-view__grid relative" style="height: <%= total_height %>px;" data-controller="day-view">
   <!-- Time labels and grid lines -->
   <% (start_hour..end_hour).each do |hour| %>
     <%
       minutes_from_start = (hour - start_hour) * 60
       top_position = minutes_from_start * pixels_per_minute
     %>
-    <div class="absolute left-0 right-0 border-t border-zinc-100" style="top: <%= top_position %>px;">
-      <span class="absolute -top-2 left-2 bg-white px-1 text-xs text-zinc-400">
+    <div class="day-view__hour-line absolute left-0 right-0" style="top: <%= top_position %>px;">
+      <span class="day-view__hour-label">
         <%= format("%02d:00", hour) %>
       </span>
     </div>
   <% end %>
 
   <!-- Events container (offset for time labels) -->
-  <div class="absolute inset-y-0 left-16 right-2">
+  <div class="absolute inset-y-0 left-14 right-2">
     <!-- Google Calendar events -->
     <div data-day-view-target="googleEvents">
       <% google_events.each do |event| %>
@@ -32,10 +32,10 @@
           top_position = minutes_from_day_start * pixels_per_minute
           height = event[:duration_minutes] * pixels_per_minute
         %>
-        <div class="absolute left-0 right-0 overflow-hidden rounded-md border border-blue-200 bg-blue-50 px-2 py-1 opacity-90"
+        <div class="time-block time-block--google"
              style="top: <%= top_position %>px; height: <%= height %>px;">
-          <span class="truncate text-xs font-medium text-blue-900"><%= event[:title] %></span>
-          <span class="text-xs text-blue-600">
+          <span class="time-block__title"><%= event[:title] %></span>
+          <span class="time-block__time">
             <%= format("%02d:%02d", event[:start_minutes] / 60, event[:start_minutes] % 60) %> -
             <%= format("%02d:%02d", event[:end_minutes] / 60, event[:end_minutes] % 60) %>
           </span>

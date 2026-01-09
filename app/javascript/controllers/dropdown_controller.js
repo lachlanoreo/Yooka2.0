@@ -17,11 +17,18 @@ export default class extends Controller {
 
   open() {
     this.menuTarget.classList.remove("hidden")
+    // Trigger reflow for animation
+    this.menuTarget.offsetHeight
+    this.menuTarget.classList.add("open")
     document.addEventListener("click", this.closeOnClickOutside)
   }
 
   close() {
-    this.menuTarget.classList.add("hidden")
+    this.menuTarget.classList.remove("open")
+    // Wait for animation to finish before hiding
+    setTimeout(() => {
+      this.menuTarget.classList.add("hidden")
+    }, 200)
     document.removeEventListener("click", this.closeOnClickOutside)
   }
 
