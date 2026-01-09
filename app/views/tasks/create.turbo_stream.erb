@@ -1,0 +1,1 @@
+<%= turbo_stream.replace "task-group-inbox", partial: "plan/task_group", locals: { group: "inbox", tasks: Task.active.in_group("inbox").ordered } %>

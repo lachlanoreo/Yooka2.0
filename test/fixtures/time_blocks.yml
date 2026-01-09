@@ -1,0 +1,5 @@
+morning_block:
+  task: today_task
+  date: <%= Date.current %>
+  start_minutes: 420  # 7:00 AM
+  duration_minutes: 30

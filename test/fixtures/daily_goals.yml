@@ -1,0 +1,3 @@
+today_goal:
+  date: <%= Date.current %>
+  content: "Ship the new feature"

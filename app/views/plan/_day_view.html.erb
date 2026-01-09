@@ -1,0 +1,53 @@
+<%
+  # Day view from 7:00 AM (420 min) to 8:00 PM (1200 min)
+  start_hour = 7
+  end_hour = 20
+  pixels_per_minute = 1 # 1 pixel per minute = 60px per hour
+  total_minutes = (end_hour - start_hour) * 60
+  total_height = total_minutes * pixels_per_minute
+  google_events = local_assigns[:google_events] || []
+%>
+
+<div class="relative" style="height: <%= total_height %>px;" data-controller="day-view">
+  <!-- Time labels and grid lines -->
+  <% (start_hour..end_hour).each do |hour| %>
+    <%
+      minutes_from_start = (hour - start_hour) * 60
+      top_position = minutes_from_start * pixels_per_minute
+    %>
+    <div class="absolute left-0 right-0 border-t border-zinc-100" style="top: <%= top_position %>px;">
+      <span class="absolute -top-2 left-2 bg-white px-1 text-xs text-zinc-400">
+        <%= format("%02d:00", hour) %>
+      </span>
+    </div>
+  <% end %>
+
+  <!-- Events container (offset for time labels) -->
+  <div class="absolute inset-y-0 left-16 right-2">
+    <!-- Google Calendar events -->
+    <div data-day-view-target="googleEvents">
+      <% google_events.each do |event| %>
+        <%
+          minutes_from_day_start = event[:start_minutes] - (start_hour * 60)
+          top_position = minutes_from_day_start * pixels_per_minute
+          height = event[:duration_minutes] * pixels_per_minute
+        %>
+        <div class="absolute left-0 right-0 overflow-hidden rounded-md border border-blue-200 bg-blue-50 px-2 py-1 opacity-90"
+             style="top: <%= top_position %>px; height: <%= height %>px;">
+          <span class="truncate text-xs font-medium text-blue-900"><%= event[:title] %></span>
+          <span class="text-xs text-blue-600">
+            <%= format("%02d:%02d", event[:start_minutes] / 60, event[:start_minutes] % 60) %> -
+            <%= format("%02d:%02d", event[:end_minutes] / 60, event[:end_minutes] % 60) %>
+          </span>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Task time blocks -->
+    <div data-day-view-target="timeBlocks">
+      <% time_blocks.each do |block| %>
+        <%= render "plan/time_block", time_block: block, start_hour: start_hour, pixels_per_minute: pixels_per_minute %>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,34 @@
+inbox_task:
+  title: "Review email"
+  source: personal
+  group: inbox
+  position: 0
+
+today_task:
+  title: "Write report"
+  source: personal
+  group: today
+  position: 0
+
+basecamp_task:
+  title: "Fix bug #123"
+  source: basecamp
+  group: inbox
+  position: 1
+  basecamp_todo_id: "12345"
+  basecamp_project_id: "67890"
+  basecamp_url: "https://basecamp.com/todo/12345"
+
+completed_task:
+  title: "Done task"
+  source: personal
+  group: inbox
+  position: 2
+  completed_at: <%= 1.day.ago %>
+
+archived_task:
+  title: "Archived task"
+  source: personal
+  group: inbox
+  position: 0
+  archived_at: <%= 1.week.ago %>

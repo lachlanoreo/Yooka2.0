@@ -1,0 +1,23 @@
+<%
+  # Calculate position based on start_minutes
+  minutes_from_day_start = time_block.start_minutes - (start_hour * 60)
+  top_position = minutes_from_day_start * pixels_per_minute
+  height = time_block.duration_minutes * pixels_per_minute
+%>
+
+<div id="<%= dom_id(time_block) %>"
+     class="absolute left-0 right-0 cursor-move overflow-hidden rounded-md border border-indigo-200 bg-indigo-100 px-2 py-1"
+     style="top: <%= top_position %>px; height: <%= height %>px;"
+     data-controller="time-block"
+     data-time-block-id-value="<%= time_block.id %>"
+     data-time-block-start-value="<%= time_block.start_minutes %>"
+     data-time-block-duration-value="<%= time_block.duration_minutes %>">
+  <div class="flex h-full flex-col">
+    <span class="truncate text-xs font-medium text-indigo-900"><%= time_block.task.title %></span>
+    <span class="text-xs text-indigo-600"><%= time_block.start_time %> - <%= time_block.end_time %></span>
+  </div>
+
+  <!-- Resize handle at bottom -->
+  <div class="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize bg-indigo-200 opacity-0 hover:opacity-100"
+       data-action="mousedown->time-block#startResize"></div>
+</div>

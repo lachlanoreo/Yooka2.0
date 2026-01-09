@@ -1,0 +1,59 @@
+<%
+  group_labels = {
+    "inbox" => "Inbox",
+    "today" => "Today",
+    "computer" => "Computer",
+    "calls" => "Calls",
+    "outside" => "Outside",
+    "home" => "Home",
+    "waiting_for" => "Waiting For",
+    "someday" => "Some day"
+  }
+  is_inbox = group == "inbox"
+%>
+
+<div id="<%= dom_id_for_group(group) %>"
+     class="<%= is_inbox ? 'rounded-lg border-2 border-amber-200 bg-amber-50 p-3' : '' %>"
+     data-controller="task-group"
+     data-task-group-name-value="<%= group %>">
+  <div class="mb-2 flex items-center justify-between">
+    <h2 class="text-sm font-semibold <%= is_inbox ? 'text-amber-800' : 'text-zinc-700' %>">
+      <%= group_labels[group] %>
+      <span class="ml-1 text-xs font-normal text-zinc-400">(<%= tasks.count %>)</span>
+    </h2>
+    <% if is_inbox %>
+      <button type="button"
+              class="rounded p-1 text-amber-600 hover:bg-amber-100"
+              data-action="click->task-group#showNewTaskForm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+    <% end %>
+  </div>
+
+  <!-- New Task Form (hidden by default, only for Inbox) -->
+  <% if is_inbox %>
+    <div data-task-group-target="newTaskForm" class="mb-2 hidden">
+      <%= form_with url: tasks_path, method: :post, data: { turbo_frame: "_top", action: "submit->task-group#createTask" } do |f| %>
+        <div class="flex gap-2">
+          <%= f.text_field :title,
+              placeholder: "New task...",
+              class: "flex-1 rounded-md border border-zinc-300 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500",
+              data: { task_group_target: "newTaskInput" } %>
+          <%= f.submit "Add", class: "rounded-md bg-amber-500 px-3 py-1 text-sm font-medium text-white hover:bg-amber-600" %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- Task List -->
+  <div class="space-y-1" data-task-group-target="taskList">
+    <% tasks.each do |task| %>
+      <%= render "plan/task_row", task: task %>
+    <% end %>
+    <% if tasks.empty? %>
+      <p class="py-2 text-center text-xs text-zinc-400">No tasks</p>
+    <% end %>
+  </div>
+</div>
