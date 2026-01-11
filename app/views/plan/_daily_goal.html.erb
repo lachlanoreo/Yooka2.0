@@ -1,10 +1,13 @@
-<div class="daily-goal" data-controller="daily-goal" data-daily-goal-date-value="<%= daily_goal.date %>">
-  <label class="daily-goal__label">Top goal for today</label>
+<% frozen = local_assigns[:frozen] || false %>
+<% placeholder_text = frozen ? "No goal was set for this day" : "What's your most important focus today?" %>
+<div class="daily-goal <%= 'daily-goal--frozen' if frozen %>" data-controller="daily-goal" data-daily-goal-date-value="<%= daily_goal.date %>">
+  <label class="daily-goal__label">Top goal for <%= frozen ? daily_goal.date.strftime("%B %-d") : "today" %></label>
   <input type="text"
          value="<%= daily_goal.content %>"
-         placeholder="What's your most important focus today?"
+         placeholder="<%= placeholder_text %>"
          class="daily-goal__input"
          data-daily-goal-target="input"
-         data-action="input->daily-goal#save">
+         data-action="input->daily-goal#save"
+         <% if frozen %>readonly<% end %>>
   <p class="daily-goal__status" data-daily-goal-target="status"></p>
 </div>

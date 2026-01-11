@@ -6,7 +6,8 @@ export default class extends Controller {
 
   async toggleComplete() {
     const task = this.element
-    const isCompleted = task.querySelector("button svg") !== null
+    const checkbox = task.querySelector(".task-row__checkbox")
+    const isCompleted = checkbox && checkbox.classList.contains("task-row__checkbox--checked")
     const action = isCompleted ? "uncomplete" : "complete"
 
     try {

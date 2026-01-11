@@ -121,7 +121,7 @@ class TasksController < ApplicationController
   end
 
   def render_task_move
-    render turbo_stream: [
+    streams = [
       turbo_stream.remove(@task),
       turbo_stream.replace("task-group-#{@old_group}",
         partial: "plan/task_group",
@@ -130,6 +130,15 @@ class TasksController < ApplicationController
         partial: "plan/task_group",
         locals: { group: @task.group, tasks: Task.active.incomplete.in_group(@task.group).ordered })
     ]
+
+    # Refresh calendar when moving to/from today (time blocks may have been created/removed)
+    if @old_group == "today" || @task.group == "today"
+      streams << turbo_stream.replace("calendar-frame",
+        partial: "plan/calendar_frame",
+        locals: calendar_frame_locals(Date.current))
+    end
+
+    render turbo_stream: streams
   end
 
   def render_task_complete
@@ -156,5 +165,27 @@ class TasksController < ApplicationController
         partial: "plan/completed_section",
         locals: { completed_tasks: completed_tasks })
     ]
+  end
+
+  def calendar_frame_locals(date)
+    daily_goal = DailyGoal.for_date(date)
+    time_blocks = TimeBlock.for_date(date).includes(:task)
+    frozen = date < Date.current
+
+    # Only fetch Google events for current/future dates
+    if date >= Date.current
+      google_service = GoogleCalendarService.new
+      google_events = google_service.connected? ? google_service.fetch_events_for_date(date) : []
+    else
+      google_events = []
+    end
+
+    {
+      viewed_date: date,
+      daily_goal: daily_goal,
+      time_blocks: time_blocks,
+      google_events: google_events,
+      frozen: frozen
+    }
   end
 end

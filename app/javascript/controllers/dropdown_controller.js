@@ -20,11 +20,25 @@ export default class extends Controller {
     // Trigger reflow for animation
     this.menuTarget.offsetHeight
     this.menuTarget.classList.add("open")
+
+    // Elevate the entire task group for z-index stacking
+    const taskGroup = this.element.closest('.task-group')
+    if (taskGroup) {
+      taskGroup.classList.add('task-group--elevated')
+    }
+
     document.addEventListener("click", this.closeOnClickOutside)
   }
 
   close() {
     this.menuTarget.classList.remove("open")
+
+    // Remove elevation from task group
+    const taskGroup = this.element.closest('.task-group')
+    if (taskGroup) {
+      taskGroup.classList.remove('task-group--elevated')
+    }
+
     // Wait for animation to finish before hiding
     setTimeout(() => {
       this.menuTarget.classList.add("hidden")

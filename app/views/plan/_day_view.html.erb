@@ -4,26 +4,28 @@
   end_hour = 20
   pixels_per_minute = 1 # 1 pixel per minute = 60px per hour
   total_minutes = (end_hour - start_hour) * 60
-  total_height = total_minutes * pixels_per_minute
+  padding_offset = 24 # 24px padding above 7am and below 8pm
+  total_height = total_minutes * pixels_per_minute + (padding_offset * 2)
   google_events = local_assigns[:google_events] || []
+  frozen = local_assigns[:frozen] || false
 %>
 
-<div class="day-view__grid relative" style="height: <%= total_height %>px;" data-controller="day-view">
+<div class="day-view__grid relative <%= 'day-view--frozen' if frozen %>" style="height: <%= total_height %>px;" data-controller="day-view">
   <!-- Time labels and grid lines -->
   <% (start_hour..end_hour).each do |hour| %>
     <%
       minutes_from_start = (hour - start_hour) * 60
       top_position = minutes_from_start * pixels_per_minute
     %>
-    <div class="day-view__hour-line absolute left-0 right-0" style="top: <%= top_position %>px;">
+    <div class="day-view__hour-line absolute left-0 right-0" style="top: <%= top_position + padding_offset %>px;">
       <span class="day-view__hour-label">
         <%= format("%02d:00", hour) %>
       </span>
     </div>
   <% end %>
 
-  <!-- Events container (offset for time labels) -->
-  <div class="absolute inset-y-0 left-14 right-2">
+  <!-- Events container (offset for time labels and padding) -->
+  <div class="absolute left-14 right-2" style="top: <%= padding_offset %>px; bottom: <%= padding_offset %>px;">
     <!-- Google Calendar events -->
     <div data-day-view-target="googleEvents">
       <% google_events.each do |event| %>
@@ -46,7 +48,7 @@
     <!-- Task time blocks -->
     <div data-day-view-target="timeBlocks">
       <% time_blocks.each do |block| %>
-        <%= render "plan/time_block", time_block: block, start_hour: start_hour, pixels_per_minute: pixels_per_minute %>
+        <%= render "plan/time_block", time_block: block, start_hour: start_hour, pixels_per_minute: pixels_per_minute, frozen: frozen %>
       <% end %>
     </div>
   </div>

@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   # Plan page (main view)
   get "plan", to: "plan#show", as: :plan
+  get "plan/calendar", to: "plan#calendar", as: :plan_calendar
   root "plan#show"
 
   # Tasks API

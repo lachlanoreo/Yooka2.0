@@ -1,6 +1,6 @@
-<div class="flex h-full gap-6 p-6">
+<div class="flex h-full min-h-0 gap-6 p-6">
   <!-- Left Pane: Task Groups -->
-  <div class="yooka-panel w-1/2 overflow-y-auto p-5">
+  <div class="yooka-panel w-1/2 min-h-0 overflow-y-auto p-5">
     <div class="space-y-5">
       <% Task::GROUPS.each_with_index do |group, index| %>
         <div class="animate-fade-in opacity-0 animate-delay-<%= index + 1 %>">
@@ -16,17 +16,15 @@
   </div>
 
   <!-- Right Pane: Calendar Day View -->
-  <div class="yooka-panel w-1/2 overflow-y-auto p-5">
-    <!-- Top Goal -->
-    <div class="mb-5 animate-fade-in opacity-0 animate-delay-1">
-      <%= render "plan/daily_goal", daily_goal: @daily_goal %>
-    </div>
-
-    <!-- Day View Calendar -->
-    <div class="animate-fade-in opacity-0 animate-delay-2">
-      <div class="day-view">
-        <%= render "plan/day_view", time_blocks: @time_blocks, google_events: @google_events %>
-      </div>
+  <div class="yooka-panel w-1/2 min-h-0 overflow-y-auto p-5">
+    <!-- Calendar with Date Navigation (Turbo Frame for date switching) -->
+    <div class="animate-fade-in opacity-0 animate-delay-1">
+      <%= render "plan/calendar_frame",
+          viewed_date: @viewed_date,
+          daily_goal: @daily_goal,
+          time_blocks: @time_blocks,
+          google_events: @google_events,
+          frozen: @frozen %>
     </div>
 
     <!-- Integration Status -->

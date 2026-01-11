@@ -3,15 +3,17 @@
   minutes_from_day_start = time_block.start_minutes - (start_hour * 60)
   top_position = minutes_from_day_start * pixels_per_minute
   height = time_block.duration_minutes * pixels_per_minute
+  frozen = local_assigns[:frozen] || false
 %>
 
 <div id="<%= dom_id(time_block) %>"
-     class="time-block time-block--task"
+     class="time-block time-block--task <%= 'time-block--frozen' if frozen %>"
      style="top: <%= top_position %>px; height: <%= height %>px;"
      data-controller="time-block"
      data-time-block-id-value="<%= time_block.id %>"
      data-time-block-start-value="<%= time_block.start_minutes %>"
-     data-time-block-duration-value="<%= time_block.duration_minutes %>">
+     data-time-block-duration-value="<%= time_block.duration_minutes %>"
+     data-time-block-frozen-value="<%= frozen %>">
   <div class="flex h-full flex-col">
     <span class="time-block__title"><%= time_block.task.title %></span>
     <span class="time-block__time"><%= time_block.start_time %> - <%= time_block.end_time %></span>

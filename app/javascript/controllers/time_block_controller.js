@@ -4,7 +4,8 @@ export default class extends Controller {
   static values = {
     id: Number,
     start: Number,
-    duration: Number
+    duration: Number,
+    frozen: { type: Boolean, default: false }
   }
 
   // Constants matching the server-side values
@@ -31,6 +32,8 @@ export default class extends Controller {
   startDrag(event) {
     // Don't start drag if clicking on resize handle
     if (event.target.dataset.action?.includes("startResize")) return
+    // Don't allow drag on frozen time blocks
+    if (this.frozenValue) return
 
     this.isDragging = true
     this.startY = event.clientY
@@ -43,6 +46,9 @@ export default class extends Controller {
   }
 
   startResize(event) {
+    // Don't allow resize on frozen time blocks
+    if (this.frozenValue) return
+
     this.isResizing = true
     this.startY = event.clientY
     this.startHeight = parseInt(this.element.style.height) || this.durationValue

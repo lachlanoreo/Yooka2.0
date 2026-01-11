@@ -1,0 +1,18 @@
+<turbo-frame id="calendar-frame">
+  <!-- Date Navigation Header -->
+  <%= render "plan/date_navigation", viewed_date: viewed_date, frozen: frozen %>
+
+  <!-- Daily Goal -->
+  <div class="mb-5">
+    <%= render "plan/daily_goal", daily_goal: daily_goal, frozen: frozen %>
+  </div>
+
+  <!-- Day View Calendar -->
+  <div class="day-view">
+    <%= render "plan/day_view",
+        time_blocks: time_blocks,
+        google_events: google_events,
+        frozen: frozen,
+        viewed_date: viewed_date %>
+  </div>
+</turbo-frame>
