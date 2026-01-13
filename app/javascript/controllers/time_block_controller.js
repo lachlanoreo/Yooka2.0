@@ -1,15 +1,17 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
+  static targets = ["time"]
+
   static values = {
     id: Number,
     start: Number,
     duration: Number,
-    frozen: { type: Boolean, default: false }
+    frozen: { type: Boolean, default: false },
+    pixelsPerMinute: Number
   }
 
   // Constants matching the server-side values
-  static PIXELS_PER_MINUTE = 1
   static SNAP_INCREMENT = 5
   static DAY_START_MINUTES = 420  // 7:00 AM
   static DAY_END_MINUTES = 1200   // 8:00 PM

@@ -19,18 +19,12 @@
   </head>
 
   <body class="yooka-container h-full">
-    <div class="flex h-full flex-col">
-      <!-- Navigation -->
-      <nav class="yooka-nav">
-        <div class="mx-auto flex h-16 items-center justify-between px-6">
-          <a href="<%= root_path %>" class="yooka-nav-brand">Yooka</a>
-        </div>
-      </nav>
+    <!-- Main Content -->
+    <main class="h-full">
+      <%= yield %>
+    </main>
 
-      <!-- Main Content -->
-      <main class="flex-1 overflow-hidden">
-        <%= yield %>
-      </main>
-    </div>
+    <!-- Portal for dropdowns to escape overflow containers -->
+    <div id="dropdown-portal"></div>
   </body>
 </html>

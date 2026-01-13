@@ -2,7 +2,7 @@
   # Day view from 7:00 AM (420 min) to 8:00 PM (1200 min)
   start_hour = 7
   end_hour = 20
-  pixels_per_minute = 1 # 1 pixel per minute = 60px per hour
+  pixels_per_minute = 0.664 # 0.664 pixel per minute = ~40px per hour
   total_minutes = (end_hour - start_hour) * 60
   padding_offset = 24 # 24px padding above 7am and below 8pm
   total_height = total_minutes * pixels_per_minute + (padding_offset * 2)

@@ -11,13 +11,45 @@ export default class extends Controller {
       handle: "[data-drag-handle]",
       ghostClass: "opacity-50",
       dragClass: "shadow-lg",
-      onEnd: this.onEnd.bind(this)
+      onEnd: this.onEnd.bind(this),
+      onAdd: this.onAdd.bind(this),
+      onRemove: this.onRemove.bind(this)
     })
   }
 
   disconnect() {
     if (this.sortable) {
       this.sortable.destroy()
+    }
+  }
+
+  onAdd(event) {
+    // Task added to this group - hide empty message if present
+    this.updateEmptyState()
+  }
+
+  onRemove(event) {
+    // Task removed from this group - show empty message if no tasks left
+    this.updateEmptyState()
+  }
+
+  updateEmptyState() {
+    const emptyMessage = this.element.querySelector('.empty-message')
+    const taskRows = this.element.querySelectorAll('.task-row')
+
+    if (taskRows.length === 0) {
+      // No tasks - show empty message
+      if (!emptyMessage) {
+        const p = document.createElement('p')
+        p.className = 'task-group__empty empty-message'
+        p.textContent = 'No tasks yet'
+        this.element.appendChild(p)
+      }
+    } else {
+      // Has tasks - hide empty message
+      if (emptyMessage) {
+        emptyMessage.remove()
+      }
     }
   }
 
@@ -44,12 +76,15 @@ export default class extends Controller {
         headers: {
           "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content,
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          "Accept": "text/vnd.turbo-stream.html"
         },
         body: JSON.stringify({ group: group })
       })
 
-      if (!moveResponse.ok) {
+      if (moveResponse.ok) {
+        const html = await moveResponse.text()
+        Turbo.renderStreamMessage(html)
+      } else {
         console.error("Failed to move task")
         window.location.reload()
         return

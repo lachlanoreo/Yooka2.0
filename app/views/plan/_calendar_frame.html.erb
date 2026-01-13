@@ -1,9 +1,11 @@
 <turbo-frame id="calendar-frame">
   <!-- Date Navigation Header -->
-  <%= render "plan/date_navigation", viewed_date: viewed_date, frozen: frozen %>
+  <div class="mb-4">
+    <%= render "plan/date_navigation", viewed_date: viewed_date, frozen: frozen %>
+  </div>
 
   <!-- Daily Goal -->
-  <div class="mb-5">
+  <div class="mb-4">
     <%= render "plan/daily_goal", daily_goal: daily_goal, frozen: frozen %>
   </div>
 

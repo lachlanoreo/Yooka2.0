@@ -9,8 +9,7 @@
     <% end %>
 
     <div class="date-navigation__date">
-      <span class="date-navigation__day"><%= viewed_date.strftime("%A") %></span>
-      <span class="date-navigation__full"><%= viewed_date.strftime("%B %-d, %Y") %></span>
+      <span class="date-navigation__day"><%= viewed_date.strftime("%A") %>, <%= viewed_date.strftime("%B %-d, %Y") %></span>
     </div>
 
     <%= link_to plan_calendar_path(date: viewed_date + 1.day),
