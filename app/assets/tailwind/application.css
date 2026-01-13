@@ -659,6 +659,7 @@ h1, h2, h3, h4, h5, h6,
   border: 1px solid var(--stone-200);
   overflow: hidden;
   position: relative;
+  height: 100%;
 }
 
 .day-view__header {
@@ -676,7 +677,6 @@ h1, h2, h3, h4, h5, h6,
 
 .day-view__grid {
   position: relative;
-  padding: 1.25rem 0;
 }
 
 .day-view__hour-line {
@@ -731,6 +731,9 @@ h1, h2, h3, h4, h5, h6,
   border: 1px solid #9280a0;
   border-left: 3px solid #745284;
   opacity: 0.95;
+  /* Override base left/right to allow percentage positioning for overlapping events */
+  left: auto;
+  right: auto;
 }
 
 .time-block--google .time-block__title {

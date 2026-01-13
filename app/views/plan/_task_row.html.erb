@@ -55,7 +55,7 @@
     </span>
     <input type="date"
            data-task-row-target="dateInput"
-           data-action="change->task-row#saveDate blur->task-row#cancelDateEdit"
+           data-action="change->task-row#saveDate blur->task-row#saveDate"
            value="<%= task.due_date&.to_s %>"
            class="hidden w-24 rounded border px-1 py-0.5 text-xs focus:outline-none new-task-form__date">
   <% elsif task.due_date %>

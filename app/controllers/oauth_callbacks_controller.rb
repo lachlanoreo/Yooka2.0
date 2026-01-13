@@ -47,12 +47,6 @@ class OauthCallbacksController < ApplicationController
 
     auth_data = JSON.parse(auth_response.body)
 
-    # Extract user ID from identity
-    user_id = auth_data.dig('identity', 'id')
-    unless user_id
-      return redirect_to plan_path, alert: "Could not get Basecamp user ID"
-    end
-
     # Get the first Basecamp 3/4 account
     account = auth_data['accounts'].find { |a| a['product'] == 'bc3' }
 
@@ -60,13 +54,26 @@ class OauthCallbacksController < ApplicationController
       return redirect_to plan_path, alert: "No Basecamp 3/4 account found"
     end
 
+    # Get actual Basecamp Person ID from profile (not the 37signals identity ID)
+    profile_response = Faraday.get("https://3.basecampapi.com/#{account['id']}/my/profile.json") do |req|
+      req.headers['Authorization'] = "Bearer #{token_data['access_token']}"
+      req.headers['User-Agent'] = 'Yooka (lachlan@example.com)'
+    end
+
+    unless profile_response.success?
+      return redirect_to plan_path, alert: "Failed to get Basecamp profile"
+    end
+
+    profile = JSON.parse(profile_response.body)
+    basecamp_person_id = profile['id'].to_s
+
     credential = BasecampCredential.first_or_initialize
     credential.update!(
       access_token: token_data['access_token'],
       refresh_token: token_data['refresh_token'],
       expires_at: Time.current + token_data['expires_in'].to_i.seconds,
       account_id: account['id'].to_s,
-      basecamp_user_id: user_id.to_s
+      basecamp_user_id: basecamp_person_id
     )
 
     redirect_to plan_path, notice: "Basecamp connected successfully!"

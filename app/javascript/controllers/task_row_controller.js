@@ -75,6 +75,7 @@ export default class extends Controller {
   editDate() {
     if (!this.hasDateDisplayTarget || !this.hasDateInputTarget) return
 
+    this.originalDate = this.dateInputTarget.value
     this.dateDisplayTarget.classList.add("hidden")
     this.dateInputTarget.classList.remove("hidden")
     this.dateInputTarget.focus()
@@ -82,6 +83,14 @@ export default class extends Controller {
 
   async saveDate(event) {
     const newDate = event.target.value
+
+    // Avoid double-saving if value hasn't changed
+    if (this.isSaving || newDate === this.originalDate) {
+      this.cancelDateEdit()
+      return
+    }
+
+    this.isSaving = true
 
     try {
       const response = await fetch(`/tasks/${this.idValue}`, {
@@ -91,7 +100,7 @@ export default class extends Controller {
           "Content-Type": "application/json",
           "Accept": "text/vnd.turbo-stream.html"
         },
-        body: JSON.stringify({ due_date: newDate || null })
+        body: JSON.stringify({ task: { due_date: newDate || null } })
       })
 
       if (response.ok) {
@@ -101,6 +110,8 @@ export default class extends Controller {
     } catch (error) {
       console.error("Error updating date:", error)
       this.cancelDateEdit()
+    } finally {
+      this.isSaving = false
     }
   }
 

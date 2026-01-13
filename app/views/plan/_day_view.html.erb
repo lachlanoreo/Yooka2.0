@@ -2,59 +2,68 @@
   # Day view from 7:00 AM (420 min) to 8:00 PM (1200 min)
   start_hour = 7
   end_hour = 20
-  pixels_per_minute = 0.664 # 0.664 pixel per minute = ~40px per hour
   total_minutes = (end_hour - start_hour) * 60
-  padding_offset = 24 # 24px padding above 7am and below 8pm
-  total_height = total_minutes * pixels_per_minute + (padding_offset * 2)
+  padding_offset = 16 # 16px padding above 7:00 and below 20:00
   google_events = local_assigns[:google_events] || []
   frozen = local_assigns[:frozen] || false
 %>
 
-<div class="day-view__grid relative <%= 'day-view--frozen' if frozen %>" style="height: <%= total_height %>px;" data-controller="day-view">
-  <!-- Time labels and grid lines -->
-  <% (start_hour..end_hour).each do |hour| %>
-    <%
-      minutes_from_start = (hour - start_hour) * 60
-      top_position = minutes_from_start * pixels_per_minute
-    %>
-    <div class="day-view__hour-line absolute left-0 right-0" style="top: <%= top_position + padding_offset %>px;">
-      <span class="day-view__hour-label">
-        <%= format("%02d:00", hour) %>
-      </span>
-    </div>
-  <% end %>
+<div class="day-view__grid h-full relative <%= 'day-view--frozen' if frozen %>"
+     data-controller="day-view"
+     data-day-view-start-hour-value="<%= start_hour %>"
+     data-day-view-end-hour-value="<%= end_hour %>"
+     data-day-view-total-minutes-value="<%= total_minutes %>"
+     data-day-view-padding-value="<%= padding_offset %>">
 
-  <!-- Events container (offset for time labels and padding) -->
-  <div class="absolute left-14 right-2" style="top: <%= padding_offset %>px; bottom: <%= padding_offset %>px;">
-    <!-- Google Calendar events -->
-    <div data-day-view-target="googleEvents">
-      <% google_events.each do |event| %>
-        <%
-          minutes_from_day_start = event[:start_minutes] - (start_hour * 60)
-          top_position = minutes_from_day_start * pixels_per_minute
-          height = event[:duration_minutes] * pixels_per_minute
-        %>
-        <%
-          is_short = event[:duration_minutes] < 30
-          is_compact = event[:duration_minutes] >= 30 && event[:duration_minutes] < 60
-          is_inline = is_short || is_compact
-        %>
-        <div class="time-block time-block--google <%= 'time-block--short' if is_short %> <%= 'time-block--compact' if is_compact %>"
-             style="top: <%= top_position %>px; height: <%= height %>px;">
-          <span class="time-block__title"><%= event[:title] %></span>
-          <span class="time-block__time">
-            <%= format("%02d:%02d", event[:start_minutes] / 60, event[:start_minutes] % 60) %><% unless is_inline %> -
-            <%= format("%02d:%02d", event[:end_minutes] / 60, event[:end_minutes] % 60) %><% end %>
-          </span>
-        </div>
-      <% end %>
-    </div>
+  <!-- Content area with 16px padding top/bottom -->
+  <div class="absolute inset-0 top-4 bottom-4">
+    <!-- Time labels and grid lines -->
+    <% (start_hour..end_hour).each do |hour| %>
+      <%
+        minutes_from_start = (hour - start_hour) * 60
+        top_percent = (minutes_from_start.to_f / total_minutes) * 100
+      %>
+      <div class="day-view__hour-line absolute left-0 right-0" style="top: <%= top_percent %>%;">
+        <span class="day-view__hour-label">
+          <%= format("%02d:00", hour) %>
+        </span>
+      </div>
+    <% end %>
 
-    <!-- Task time blocks -->
-    <div data-day-view-target="timeBlocks">
-      <% time_blocks.each do |block| %>
-        <%= render "plan/time_block", time_block: block, start_hour: start_hour, pixels_per_minute: pixels_per_minute, frozen: frozen %>
-      <% end %>
+    <!-- Events container -->
+    <div class="absolute left-14 right-2 top-0 bottom-0">
+      <!-- Google Calendar events -->
+      <div data-day-view-target="googleEvents" class="relative h-full">
+        <% calculate_event_columns(google_events).each do |event| %>
+          <%
+            minutes_from_day_start = event[:start_minutes] - (start_hour * 60)
+            top_percent = (minutes_from_day_start.to_f / total_minutes) * 100
+            height_percent = (event[:duration_minutes].to_f / total_minutes) * 100
+            is_short = event[:duration_minutes] < 30
+            is_compact = event[:duration_minutes] >= 30 && event[:duration_minutes] < 60
+            is_inline = is_short || is_compact
+
+            # Calculate horizontal position for overlapping events
+            left_percent = (event[:column].to_f / event[:total_columns]) * 100
+            width_percent = 100.0 / event[:total_columns]
+          %>
+          <div class="time-block time-block--google <%= 'time-block--short' if is_short %> <%= 'time-block--compact' if is_compact %>"
+               style="top: <%= top_percent %>%; height: <%= height_percent %>%; left: <%= left_percent %>%; width: <%= width_percent %>%;">
+            <span class="time-block__title"><%= event[:title] %></span>
+            <span class="time-block__time">
+              <%= format("%02d:%02d", event[:start_minutes] / 60, event[:start_minutes] % 60) %><% unless is_inline %> -
+              <%= format("%02d:%02d", event[:end_minutes] / 60, event[:end_minutes] % 60) %><% end %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Task time blocks -->
+      <div data-day-view-target="timeBlocks">
+        <% time_blocks.each do |block| %>
+          <%= render "plan/time_block", time_block: block, start_hour: start_hour, total_minutes: total_minutes, frozen: frozen %>
+        <% end %>
+      </div>
     </div>
   </div>
 </div>

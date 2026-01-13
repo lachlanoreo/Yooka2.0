@@ -9,7 +9,7 @@ class BasecampService
     @credential.present? && @credential.access_token.present? && @credential.account_id.present?
   end
 
-  def sync_todos_assigned_to_me
+  def sync_todos_assigned_to_me(broadcast_progress: false)
     return 0 unless connected?
 
     refresh_token_if_needed!
@@ -18,27 +18,38 @@ class BasecampService
 
     # Get all projects
     projects = fetch_projects
-    Rails.logger.info "BasecampSync: Found #{projects.count} projects"
+    total_projects = projects.count
+    Rails.logger.info "BasecampSync: Found #{total_projects} projects"
+
+    # Broadcast sync started
+    if broadcast_progress
+      broadcast_sync_event("sync_started", { total_projects: total_projects })
+    end
 
     all_todos = []
 
-    projects.each do |project|
-      Rails.logger.info "BasecampSync DEBUG: Processing project '#{project['name']}' (id: #{project['id']})"
+    projects.each_with_index do |project, index|
+      # Broadcast progress for each project
+      if broadcast_progress
+        broadcast_sync_event("project_progress", {
+          current_index: index + 1,
+          total_projects: total_projects,
+          project_name: project['name']
+        })
+      end
+
+      Rails.logger.info "BasecampSync: Processing project '#{project['name']}' (#{index + 1}/#{total_projects})"
 
       # Get todosets for this project
       todoset = fetch_todoset(project['id'])
       unless todoset
-        Rails.logger.info "BasecampSync DEBUG: No todoset found for project #{project['id']}"
         next
       end
-      Rails.logger.info "BasecampSync DEBUG: Found todoset #{todoset['id']} for project #{project['id']}"
 
       # Get all todolists in the todoset
       todolists = fetch_todolists(project['id'], todoset['id'])
-      Rails.logger.info "BasecampSync DEBUG: Found #{todolists.count} todolists in project #{project['id']}"
 
       todolists.each do |todolist|
-        Rails.logger.info "BasecampSync DEBUG: Processing todolist '#{todolist['name']}' (id: #{todolist['id']})"
         # Get todos from this list that are assigned to me
         todos = fetch_todos_assigned_to_me(project['id'], todolist['id'])
         todos.each do |todo|
@@ -49,7 +60,18 @@ class BasecampService
 
     Rails.logger.info "BasecampSync: Found #{all_todos.count} todos assigned to user #{@credential.basecamp_user_id}"
 
-    sync_with_local_tasks(all_todos)
+    synced_count = sync_with_local_tasks(all_todos)
+
+    # Broadcast completion
+    if broadcast_progress
+      broadcast_sync_event("sync_completed", {
+        synced_count: synced_count,
+        total_projects: total_projects,
+        message: synced_count > 0 ? "Synced #{synced_count} tasks from Basecamp" : "No tasks found assigned to you"
+      })
+    end
+
+    synced_count
   end
 
   def complete_todo(basecamp_todo_id, basecamp_project_id)
@@ -245,5 +267,12 @@ class BasecampService
     return nil unless link_header
     match = link_header.match(/<([^>]+)>;\s*rel="next"/)
     match ? match[1] : nil
+  end
+
+  def broadcast_sync_event(type, data)
+    ActionCable.server.broadcast(
+      "basecamp_sync:#{@credential.id}",
+      { type: type }.merge(data)
+    )
   end
 end

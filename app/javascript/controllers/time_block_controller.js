@@ -7,11 +7,11 @@ export default class extends Controller {
     id: Number,
     start: Number,
     duration: Number,
-    frozen: { type: Boolean, default: false },
-    pixelsPerMinute: Number
+    totalMinutes: Number,
+    frozen: { type: Boolean, default: false }
   }
 
-  // Constants matching the server-side values
+  // Constants
   static SNAP_INCREMENT = 5
   static DAY_START_MINUTES = 420  // 7:00 AM
   static DAY_END_MINUTES = 1200   // 8:00 PM
@@ -20,8 +20,8 @@ export default class extends Controller {
     this.isDragging = false
     this.isResizing = false
     this.startY = 0
-    this.startTop = 0
-    this.startHeight = 0
+    this.startTopPercent = 0
+    this.startHeightPercent = 0
 
     // Bind event handlers
     this.handleMouseMove = this.handleMouseMove.bind(this)
@@ -29,6 +29,23 @@ export default class extends Controller {
 
     // Add drag start listener
     this.element.addEventListener("mousedown", this.startDrag.bind(this))
+  }
+
+  get containerHeight() {
+    // Find the events container (parent of timeBlocks wrapper)
+    return this.element.parentElement.parentElement.offsetHeight
+  }
+
+  get totalMinutes() {
+    return this.totalMinutesValue || 780 // Default: 13 hours
+  }
+
+  percentToMinutes(percent) {
+    return (percent / 100) * this.totalMinutes
+  }
+
+  minutesToPercent(minutes) {
+    return (minutes / this.totalMinutes) * 100
   }
 
   startDrag(event) {
@@ -39,7 +56,7 @@ export default class extends Controller {
 
     this.isDragging = true
     this.startY = event.clientY
-    this.startTop = parseInt(this.element.style.top) || 0
+    this.startTopPercent = parseFloat(this.element.style.top) || 0
 
     document.addEventListener("mousemove", this.handleMouseMove)
     document.addEventListener("mouseup", this.handleMouseUp)
@@ -53,7 +70,7 @@ export default class extends Controller {
 
     this.isResizing = true
     this.startY = event.clientY
-    this.startHeight = parseInt(this.element.style.height) || this.durationValue
+    this.startHeightPercent = parseFloat(this.element.style.height) || this.minutesToPercent(this.durationValue)
 
     document.addEventListener("mousemove", this.handleMouseMove)
     document.addEventListener("mouseup", this.handleMouseUp)
@@ -64,30 +81,42 @@ export default class extends Controller {
 
   handleMouseMove(event) {
     const deltaY = event.clientY - this.startY
+    const containerHeight = this.containerHeight
+    const deltaPercent = (deltaY / containerHeight) * 100
 
     if (this.isDragging) {
-      let newTop = this.startTop + deltaY
-      // Snap to 5-minute increments
-      newTop = Math.round(newTop / this.constructor.SNAP_INCREMENT) * this.constructor.SNAP_INCREMENT
-      // Clamp to day bounds
-      newTop = Math.max(0, newTop)
-      const maxTop = (this.constructor.DAY_END_MINUTES - this.constructor.DAY_START_MINUTES - this.durationValue)
-      newTop = Math.min(maxTop, newTop)
+      let newTopPercent = this.startTopPercent + deltaPercent
 
-      this.element.style.top = `${newTop}px`
+      // Convert to minutes for snapping
+      let newTopMinutes = this.percentToMinutes(newTopPercent)
+      // Snap to 5-minute increments
+      newTopMinutes = Math.round(newTopMinutes / this.constructor.SNAP_INCREMENT) * this.constructor.SNAP_INCREMENT
+      // Clamp to day bounds
+      newTopMinutes = Math.max(0, newTopMinutes)
+      const maxTopMinutes = this.totalMinutes - this.durationValue
+      newTopMinutes = Math.min(maxTopMinutes, newTopMinutes)
+
+      // Convert back to percent
+      newTopPercent = this.minutesToPercent(newTopMinutes)
+      this.element.style.top = `${newTopPercent}%`
     }
 
     if (this.isResizing) {
-      let newHeight = this.startHeight + deltaY
-      // Snap to 5-minute increments
-      newHeight = Math.round(newHeight / this.constructor.SNAP_INCREMENT) * this.constructor.SNAP_INCREMENT
-      // Enforce minimum and maximum
-      newHeight = Math.max(this.constructor.SNAP_INCREMENT, newHeight)
-      const currentTop = parseInt(this.element.style.top) || 0
-      const maxHeight = (this.constructor.DAY_END_MINUTES - this.constructor.DAY_START_MINUTES) - currentTop
-      newHeight = Math.min(maxHeight, newHeight)
+      let newHeightPercent = this.startHeightPercent + deltaPercent
 
-      this.element.style.height = `${newHeight}px`
+      // Convert to minutes for snapping
+      let newDurationMinutes = this.percentToMinutes(newHeightPercent)
+      // Snap to 5-minute increments
+      newDurationMinutes = Math.round(newDurationMinutes / this.constructor.SNAP_INCREMENT) * this.constructor.SNAP_INCREMENT
+      // Enforce minimum (5 mins) and maximum
+      newDurationMinutes = Math.max(this.constructor.SNAP_INCREMENT, newDurationMinutes)
+      const currentTopMinutes = this.percentToMinutes(parseFloat(this.element.style.top) || 0)
+      const maxDurationMinutes = this.totalMinutes - currentTopMinutes
+      newDurationMinutes = Math.min(maxDurationMinutes, newDurationMinutes)
+
+      // Convert back to percent
+      newHeightPercent = this.minutesToPercent(newDurationMinutes)
+      this.element.style.height = `${newHeightPercent}%`
     }
   }
 
@@ -96,15 +125,18 @@ export default class extends Controller {
     document.removeEventListener("mouseup", this.handleMouseUp)
 
     if (this.isDragging || this.isResizing) {
-      const newTop = parseInt(this.element.style.top) || 0
-      const newHeight = parseInt(this.element.style.height) || this.durationValue
+      const topPercent = parseFloat(this.element.style.top) || 0
+      const heightPercent = parseFloat(this.element.style.height) || this.minutesToPercent(this.durationValue)
 
-      // Convert back to minutes
-      const newStartMinutes = this.constructor.DAY_START_MINUTES + newTop
-      const newDuration = newHeight
+      // Convert percentages to minutes
+      const topMinutes = this.percentToMinutes(topPercent)
+      const durationMinutes = this.percentToMinutes(heightPercent)
+
+      // Calculate absolute start time
+      const newStartMinutes = this.constructor.DAY_START_MINUTES + topMinutes
 
       // Save to server
-      await this.savePosition(newStartMinutes, newDuration)
+      await this.savePosition(newStartMinutes, durationMinutes)
     }
 
     this.isDragging = false
@@ -120,14 +152,13 @@ export default class extends Controller {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          start_minutes: startMinutes,
-          duration_minutes: durationMinutes
+          start_minutes: Math.round(startMinutes),
+          duration_minutes: Math.round(durationMinutes)
         })
       })
 
       if (!response.ok) {
         console.error("Error saving time block position")
-        // Could add error handling / reverting here
       }
     } catch (error) {
       console.error("Error saving time block:", error)

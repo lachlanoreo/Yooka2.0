@@ -1,6 +1,6 @@
-<div class="flex h-full min-h-0 gap-6 p-12">
+<div class="flex min-h-full gap-6 p-12">
   <!-- Left Pane: Task Groups -->
-  <div class="yooka-panel w-1/2 min-h-0 overflow-y-auto p-5">
+  <div class="yooka-panel w-1/2 p-5">
     <div class="space-y-5">
       <% Task::GROUPS.each_with_index do |group, index| %>
         <div class="animate-fade-in opacity-0 animate-delay-<%= index + 1 %>">
@@ -16,9 +16,9 @@
   </div>
 
   <!-- Right Pane: Calendar Day View -->
-  <div class="yooka-panel w-1/2 min-h-0 overflow-y-auto p-5">
+  <div class="yooka-panel w-1/2 p-5 flex flex-col h-[calc(100vh-6rem)]">
     <!-- Calendar with Date Navigation (Turbo Frame for date switching) -->
-    <div class="animate-fade-in opacity-0 animate-delay-1">
+    <div class="animate-fade-in opacity-0 animate-delay-1 flex-grow flex flex-col min-h-0">
       <%= render "plan/calendar_frame",
           viewed_date: @viewed_date,
           daily_goal: @daily_goal,
@@ -28,7 +28,7 @@
     </div>
 
     <!-- Integration Status -->
-    <div class="mt-5 space-y-3 animate-fade-in opacity-0 animate-delay-3">
+    <div class="mt-5 space-y-3 animate-fade-in opacity-0 animate-delay-3 flex-shrink-0">
       <% if @google_connected %>
         <div class="connection-card connection-card--connected">
           <p class="connection-card__status connection-card__status--connected">Google Calendar connected</p>
@@ -41,9 +41,18 @@
       <% end %>
 
       <% if @basecamp_connected %>
-        <div class="connection-card connection-card--connected">
+        <div class="connection-card connection-card--connected" data-controller="basecamp-sync">
           <p class="connection-card__status connection-card__status--connected">Basecamp connected</p>
-          <%= button_to "Sync Now", basecamp_sync_path, method: :post, class: "connection-card__action connection-card__action--sync", data: { turbo: false } %>
+          <button type="button"
+                  class="connection-card__action connection-card__action--sync flex items-center gap-2"
+                  data-basecamp-sync-target="button"
+                  data-action="click->basecamp-sync#sync">
+            <span data-basecamp-sync-target="buttonText">Sync Now</span>
+            <svg class="animate-spin h-4 w-4 hidden" data-basecamp-sync-target="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </button>
         </div>
       <% else %>
         <div class="connection-card connection-card--disconnected">
