@@ -3,7 +3,7 @@ Rails.application.config.middleware.use OmniAuth::Builder do
     ENV['GOOGLE_CLIENT_ID'],
     ENV['GOOGLE_CLIENT_SECRET'],
     {
-      scope: 'calendar.readonly',
+      scope: 'openid email calendar.readonly',
       access_type: 'offline',
       prompt: 'consent'
     }
