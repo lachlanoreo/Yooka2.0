@@ -14,6 +14,11 @@ class PlanController < ApplicationController
     google_service = GoogleCalendarService.new
     @google_connected = google_service.connected?
     @basecamp_connected = BasecampCredential.current.present?
+
+    # Trigger background sync on page load if Basecamp is connected
+    if @basecamp_connected
+      BasecampSyncJob.perform_later
+    end
   end
 
   def calendar

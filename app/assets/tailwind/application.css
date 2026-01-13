@@ -773,6 +773,52 @@ h1, h2, h3, h4, h5, h6,
   opacity: 1;
 }
 
+/* Short events (< 30 mins) - Google Calendar style */
+.time-block--short {
+  padding: 1px 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.time-block--short .time-block__title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.time-block--short .time-block__time {
+  flex-shrink: 0;
+}
+
+.time-block--short .time-block__time::before {
+  content: ", ";
+}
+
+/* Compact events (30-59 mins) */
+.time-block--compact {
+  padding: 2px 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.time-block--compact .time-block__title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.time-block--compact .time-block__time {
+  flex-shrink: 0;
+}
+
+.time-block--compact .time-block__time::before {
+  content: ", ";
+}
+
 /* ============================================
    DATE NAVIGATION
    ============================================ */

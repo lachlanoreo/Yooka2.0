@@ -49,10 +49,12 @@
         <div class="connection-card connection-card--disconnected">
           <p class="connection-card__status connection-card__status--disconnected">Basecamp not connected</p>
           <%
+            # Use 127.0.0.1 instead of request.base_url to match registered redirect URI
+            redirect_uri = "http://127.0.0.1:#{request.port}/auth/basecamp/callback"
             basecamp_auth_url = "https://launchpad.37signals.com/authorization/new?" + {
               type: 'web_server',
               client_id: ENV['BASECAMP_CLIENT_ID'],
-              redirect_uri: "#{request.base_url}/auth/basecamp/callback"
+              redirect_uri: redirect_uri
             }.to_query
           %>
           <%= link_to "Connect", basecamp_auth_url, class: "connection-card__action connection-card__action--connect" %>

@@ -10,23 +10,35 @@ class BasecampService
   end
 
   def sync_todos_assigned_to_me
-    return [] unless connected?
+    return 0 unless connected?
 
     refresh_token_if_needed!
 
+    Rails.logger.info "BasecampSync: Starting sync for user #{@credential.basecamp_user_id}"
+
     # Get all projects
     projects = fetch_projects
+    Rails.logger.info "BasecampSync: Found #{projects.count} projects"
+
     all_todos = []
 
     projects.each do |project|
+      Rails.logger.info "BasecampSync DEBUG: Processing project '#{project['name']}' (id: #{project['id']})"
+
       # Get todosets for this project
       todoset = fetch_todoset(project['id'])
-      next unless todoset
+      unless todoset
+        Rails.logger.info "BasecampSync DEBUG: No todoset found for project #{project['id']}"
+        next
+      end
+      Rails.logger.info "BasecampSync DEBUG: Found todoset #{todoset['id']} for project #{project['id']}"
 
       # Get all todolists in the todoset
       todolists = fetch_todolists(project['id'], todoset['id'])
+      Rails.logger.info "BasecampSync DEBUG: Found #{todolists.count} todolists in project #{project['id']}"
 
       todolists.each do |todolist|
+        Rails.logger.info "BasecampSync DEBUG: Processing todolist '#{todolist['name']}' (id: #{todolist['id']})"
         # Get todos from this list that are assigned to me
         todos = fetch_todos_assigned_to_me(project['id'], todolist['id'])
         todos.each do |todo|
@@ -34,6 +46,8 @@ class BasecampService
         end
       end
     end
+
+    Rails.logger.info "BasecampSync: Found #{all_todos.count} todos assigned to user #{@credential.basecamp_user_id}"
 
     sync_with_local_tasks(all_todos)
   end
@@ -57,42 +71,50 @@ class BasecampService
   private
 
   def fetch_projects
-    response = connection.get("#{BASE_URL}/#{@credential.account_id}/projects.json")
-    return [] unless response.success?
-    JSON.parse(response.body)
+    fetch_all_pages("#{BASE_URL}/#{@credential.account_id}/projects.json")
   rescue => e
     Rails.logger.error "Basecamp fetch projects error: #{e.message}"
     []
   end
 
   def fetch_todoset(project_id)
-    response = connection.get("#{BASE_URL}/#{@credential.account_id}/buckets/#{project_id}/todoset.json")
+    # Get project details which includes the dock with tool IDs
+    response = connection.get("#{BASE_URL}/#{@credential.account_id}/projects/#{project_id}.json")
     return nil unless response.success?
-    JSON.parse(response.body)
+
+    project = JSON.parse(response.body)
+    dock = project['dock'] || []
+
+    # Find the todoset in the dock
+    todoset_dock = dock.find { |d| d['name'] == 'todoset' && d['enabled'] }
+    return nil unless todoset_dock
+
+    # Return a hash with the ID we need
+    { 'id' => todoset_dock['id'], 'url' => todoset_dock['url'] }
   rescue => e
     Rails.logger.error "Basecamp fetch todoset error: #{e.message}"
     nil
   end
 
   def fetch_todolists(project_id, todoset_id)
-    response = connection.get("#{BASE_URL}/#{@credential.account_id}/buckets/#{project_id}/todosets/#{todoset_id}/todolists.json")
-    return [] unless response.success?
-    JSON.parse(response.body)
+    fetch_all_pages("#{BASE_URL}/#{@credential.account_id}/buckets/#{project_id}/todosets/#{todoset_id}/todolists.json")
   rescue => e
     Rails.logger.error "Basecamp fetch todolists error: #{e.message}"
     []
   end
 
   def fetch_todos_assigned_to_me(project_id, todolist_id)
-    response = connection.get("#{BASE_URL}/#{@credential.account_id}/buckets/#{project_id}/todolists/#{todolist_id}/todos.json")
-    return [] unless response.success?
+    url = "#{BASE_URL}/#{@credential.account_id}/buckets/#{project_id}/todolists/#{todolist_id}/todos.json"
+    todos = fetch_all_pages(url)
 
-    todos = JSON.parse(response.body)
+    Rails.logger.info "BasecampSync: Todolist #{todolist_id} has #{todos.count} total todos"
+
     # Filter to only todos assigned to current user
-    # In Basecamp, 'assignees' contains the assigned people
+    current_user_id = @credential.basecamp_user_id.to_s
+
     todos.select do |todo|
       assignees = todo['assignees'] || []
-      assignees.any? # For now, include all assigned todos - we'd need user ID to filter properly
+      assignees.any? { |a| a['id'].to_s == current_user_id }
     end
   rescue => e
     Rails.logger.error "Basecamp fetch todos error: #{e.message}"
@@ -112,6 +134,8 @@ class BasecampService
 
   def sync_with_local_tasks(basecamp_todos)
     synced_ids = []
+    created_count = 0
+    updated_count = 0
 
     basecamp_todos.each do |todo_data|
       task = Task.find_or_initialize_by(basecamp_todo_id: todo_data[:basecamp_todo_id])
@@ -127,6 +151,7 @@ class BasecampService
           basecamp_url: todo_data[:basecamp_url]
         )
         task.save!
+        created_count += 1
       else
         # Existing task - update title and due date from Basecamp
         task.update!(
@@ -139,15 +164,22 @@ class BasecampService
         if todo_data[:completed] && !task.completed?
           task.complete!
         end
+        updated_count += 1
       end
 
       synced_ids << todo_data[:basecamp_todo_id]
     end
 
     # Archive tasks that no longer exist in Basecamp
+    archived_count = 0
     Task.basecamp.where.not(basecamp_todo_id: synced_ids).find_each do |task|
-      task.archive! unless task.archived?
+      unless task.archived?
+        task.archive!
+        archived_count += 1
+      end
     end
+
+    Rails.logger.info "BasecampSync: Created #{created_count}, Updated #{updated_count}, Archived #{archived_count} tasks"
 
     synced_ids.count
   end
@@ -187,5 +219,31 @@ class BasecampService
     end
   rescue => e
     Rails.logger.error "Failed to refresh Basecamp token: #{e.message}"
+  end
+
+  # Pagination helpers for Basecamp API
+  # Basecamp uses "geared pagination": 15 results on page 1, 30 on page 2, 50 on page 3, 100 on page 4+
+  def fetch_all_pages(initial_url)
+    results = []
+    url = initial_url
+
+    while url
+      response = connection.get(url)
+      break unless response.success?
+
+      results.concat(JSON.parse(response.body))
+      url = extract_next_page_url(response.headers['Link'])
+    end
+
+    results
+  rescue => e
+    Rails.logger.error "Basecamp pagination error: #{e.message}"
+    results
+  end
+
+  def extract_next_page_url(link_header)
+    return nil unless link_header
+    match = link_header.match(/<([^>]+)>;\s*rel="next"/)
+    match ? match[1] : nil
   end
 end

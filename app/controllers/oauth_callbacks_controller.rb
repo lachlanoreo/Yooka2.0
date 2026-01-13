@@ -18,13 +18,15 @@ class OauthCallbacksController < ApplicationController
     return redirect_to plan_path, alert: "No authorization code received" unless code
 
     # Exchange code for token
+    # Use 127.0.0.1 to match the registered redirect URI
+    redirect_uri = "http://127.0.0.1:#{request.port}/auth/basecamp/callback"
     response = Faraday.post('https://launchpad.37signals.com/authorization/token') do |req|
       req.params = {
         type: 'web_server',
         code: code,
         client_id: ENV['BASECAMP_CLIENT_ID'],
         client_secret: ENV['BASECAMP_CLIENT_SECRET'],
-        redirect_uri: "#{request.base_url}/auth/basecamp/callback"
+        redirect_uri: redirect_uri
       }
     end
 
@@ -44,6 +46,13 @@ class OauthCallbacksController < ApplicationController
     end
 
     auth_data = JSON.parse(auth_response.body)
+
+    # Extract user ID from identity
+    user_id = auth_data.dig('identity', 'id')
+    unless user_id
+      return redirect_to plan_path, alert: "Could not get Basecamp user ID"
+    end
+
     # Get the first Basecamp 3/4 account
     account = auth_data['accounts'].find { |a| a['product'] == 'bc3' }
 
@@ -56,7 +65,8 @@ class OauthCallbacksController < ApplicationController
       access_token: token_data['access_token'],
       refresh_token: token_data['refresh_token'],
       expires_at: Time.current + token_data['expires_in'].to_i.seconds,
-      account_id: account['id'].to_s
+      account_id: account['id'].to_s,
+      basecamp_user_id: user_id.to_s
     )
 
     redirect_to plan_path, notice: "Basecamp connected successfully!"

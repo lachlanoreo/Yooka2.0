@@ -34,12 +34,17 @@
           top_position = minutes_from_day_start * pixels_per_minute
           height = event[:duration_minutes] * pixels_per_minute
         %>
-        <div class="time-block time-block--google"
+        <%
+          is_short = event[:duration_minutes] < 30
+          is_compact = event[:duration_minutes] >= 30 && event[:duration_minutes] < 60
+          is_inline = is_short || is_compact
+        %>
+        <div class="time-block time-block--google <%= 'time-block--short' if is_short %> <%= 'time-block--compact' if is_compact %>"
              style="top: <%= top_position %>px; height: <%= height %>px;">
           <span class="time-block__title"><%= event[:title] %></span>
           <span class="time-block__time">
-            <%= format("%02d:%02d", event[:start_minutes] / 60, event[:start_minutes] % 60) %> -
-            <%= format("%02d:%02d", event[:end_minutes] / 60, event[:end_minutes] % 60) %>
+            <%= format("%02d:%02d", event[:start_minutes] / 60, event[:start_minutes] % 60) %><% unless is_inline %> -
+            <%= format("%02d:%02d", event[:end_minutes] / 60, event[:end_minutes] % 60) %><% end %>
           </span>
         </div>
       <% end %>

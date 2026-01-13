@@ -4,20 +4,28 @@
   top_position = minutes_from_day_start * pixels_per_minute
   height = time_block.duration_minutes * pixels_per_minute
   frozen = local_assigns[:frozen] || false
+  is_short = time_block.duration_minutes < 30
+  is_compact = time_block.duration_minutes >= 30 && time_block.duration_minutes < 60
+  is_inline = is_short || is_compact
 %>
 
 <div id="<%= dom_id(time_block) %>"
-     class="time-block time-block--task <%= 'time-block--frozen' if frozen %>"
+     class="time-block time-block--task <%= 'time-block--frozen' if frozen %> <%= 'time-block--short' if is_short %> <%= 'time-block--compact' if is_compact %>"
      style="top: <%= top_position %>px; height: <%= height %>px;"
      data-controller="time-block"
      data-time-block-id-value="<%= time_block.id %>"
      data-time-block-start-value="<%= time_block.start_minutes %>"
      data-time-block-duration-value="<%= time_block.duration_minutes %>"
      data-time-block-frozen-value="<%= frozen %>">
-  <div class="flex h-full items-start justify-between gap-2 px-2 py-1">
-    <span class="time-block__title flex-1"><%= time_block.task.title %></span>
-    <span class="time-block__time flex-shrink-0"><%= time_block.start_time %> - <%= time_block.end_time %></span>
-  </div>
+  <% if is_inline %>
+    <span class="time-block__title"><%= time_block.task.title %></span>
+    <span class="time-block__time"><%= time_block.start_time %></span>
+  <% else %>
+    <div class="flex h-full items-start justify-between gap-2 px-2 py-1">
+      <span class="time-block__title flex-1"><%= time_block.task.title %></span>
+      <span class="time-block__time flex-shrink-0"><%= time_block.start_time %> - <%= time_block.end_time %></span>
+    </div>
+  <% end %>
 
   <!-- Resize handle at bottom -->
   <div class="time-block__resize"
