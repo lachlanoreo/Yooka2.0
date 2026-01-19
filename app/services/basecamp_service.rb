@@ -27,6 +27,8 @@ class BasecampService
     end
 
     all_todos = []
+    projects_skipped = 0
+    total_todolists = 0
 
     projects.each_with_index do |project, index|
       # Broadcast progress for each project
@@ -41,13 +43,16 @@ class BasecampService
       Rails.logger.info "BasecampSync: Processing project '#{project['name']}' (#{index + 1}/#{total_projects})"
 
       # Get todosets for this project
-      todoset = fetch_todoset(project['id'])
+      todoset = fetch_todoset(project['id'], project['name'])
       unless todoset
+        projects_skipped += 1
         next
       end
 
       # Get all todolists in the todoset
       todolists = fetch_todolists(project['id'], todoset['id'])
+      total_todolists += todolists.count
+      Rails.logger.info "BasecampSync: Project '#{project['name']}' has #{todolists.count} todolists"
 
       todolists.each do |todolist|
         # Get todos from this list that are assigned to me
@@ -59,6 +64,7 @@ class BasecampService
     end
 
     Rails.logger.info "BasecampSync: Found #{all_todos.count} todos assigned to user #{@credential.basecamp_user_id}"
+    Rails.logger.info "BasecampSync Summary: #{total_projects} projects total, #{projects_skipped} skipped (no todoset), #{total_todolists} todolists scanned"
 
     synced_count = sync_with_local_tasks(all_todos)
 
@@ -99,7 +105,7 @@ class BasecampService
     []
   end
 
-  def fetch_todoset(project_id)
+  def fetch_todoset(project_id, project_name = nil)
     # Get project details which includes the dock with tool IDs
     response = connection.get("#{BASE_URL}/#{@credential.account_id}/projects/#{project_id}.json")
     return nil unless response.success?
@@ -109,12 +115,18 @@ class BasecampService
 
     # Find the todoset in the dock
     todoset_dock = dock.find { |d| d['name'] == 'todoset' && d['enabled'] }
-    return nil unless todoset_dock
+
+    unless todoset_dock
+      # Log why this project was skipped
+      dock_tools = dock.map { |d| { name: d['name'], enabled: d['enabled'] } }
+      Rails.logger.warn "BasecampSync: Skipping project '#{project_name || project_id}' - no enabled todoset. Dock tools: #{dock_tools.inspect}"
+      return nil
+    end
 
     # Return a hash with the ID we need
     { 'id' => todoset_dock['id'], 'url' => todoset_dock['url'] }
   rescue => e
-    Rails.logger.error "Basecamp fetch todoset error: #{e.message}"
+    Rails.logger.error "Basecamp fetch todoset error for project #{project_id}: #{e.message}"
     nil
   end
 
@@ -125,19 +137,43 @@ class BasecampService
     []
   end
 
+  def fetch_todolist_groups(project_id, todolist_id)
+    fetch_all_pages("#{BASE_URL}/#{@credential.account_id}/buckets/#{project_id}/todolists/#{todolist_id}/groups.json")
+  rescue => e
+    Rails.logger.error "Basecamp fetch todolist groups error: #{e.message}"
+    []
+  end
+
   def fetch_todos_assigned_to_me(project_id, todolist_id)
+    # Fetch ungrouped todos at the root level of the todolist
     url = "#{BASE_URL}/#{@credential.account_id}/buckets/#{project_id}/todolists/#{todolist_id}/todos.json"
     todos = fetch_all_pages(url)
 
-    Rails.logger.info "BasecampSync: Todolist #{todolist_id} has #{todos.count} total todos"
+    # Also fetch todos from groups within this todolist
+    groups = fetch_todolist_groups(project_id, todolist_id)
+    groups.each do |group|
+      group_todos_url = "#{BASE_URL}/#{@credential.account_id}/buckets/#{project_id}/todolists/#{group['id']}/todos.json"
+      group_todos = fetch_all_pages(group_todos_url)
+      if group_todos.count > 0
+        Rails.logger.info "BasecampSync: Group '#{group['name']}' has #{group_todos.count} todos"
+      end
+      todos.concat(group_todos)
+    end
 
     # Filter to only todos assigned to current user
     current_user_id = @credential.basecamp_user_id.to_s
 
-    todos.select do |todo|
+    filtered_todos = todos.select do |todo|
       assignees = todo['assignees'] || []
       assignees.any? { |a| a['id'].to_s == current_user_id }
     end
+
+    # Log filtering details
+    if todos.count > 0
+      Rails.logger.info "BasecampSync: Todolist #{todolist_id} - #{todos.count} total todos (including groups), #{filtered_todos.count} assigned to user #{current_user_id}"
+    end
+
+    filtered_todos
   rescue => e
     Rails.logger.error "Basecamp fetch todos error: #{e.message}"
     []
